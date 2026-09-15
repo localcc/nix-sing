@@ -99,6 +99,11 @@ let
         description = "IPAM configuration";
         default = null;
       };
+      additionalParams = mkOption {
+        type = types.listOf types.str;
+        description = "Additional params to pass to the network creation command";
+        default = [];
+      };
     };
   };
 
@@ -374,11 +379,12 @@ in
       systemd.services = lib.mapAttrs' (
         name: value:
         let
-          networkConfig =
-            if (value.ipam != null) then
-              "--subnet=${value.ipam.subnet} --gateway=${value.ipam.gateway}"
-            else
-              "";
+          ipamOptions = if (value.ipam != null) then
+            [ "--subnet=${value.ipam.subnet}" "--gateway=${value.ipam.gateway}"]
+          else
+            [];
+
+          networkConfig = lib.strings.concatStringsSep " " (ipamOptions ++ value.additionalParams);
         in
         {
           name = "podman-network-${name}";
